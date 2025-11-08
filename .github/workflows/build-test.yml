@@ -3,7 +3,7 @@ name: Compile Fixed Plugin (Test Build)
 on:
   push:
     branches:
-      - main  # 任何推送到 main 分支的操作都会触发编译
+      -  master  # 任何推送到 main 分支的操作都会触发编译
 
 jobs:
   build:
