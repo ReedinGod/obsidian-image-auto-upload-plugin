@@ -355,6 +355,16 @@ export default class imageAutoUploadPlugin extends Plugin {
 
     this.upload(imageList).then(res => {
       let uploadUrlList = res.result;
+
+      // ------------------------ ↓↓↓ 关键修改部分 ↓↓↓ ------------------------
+      // [安全检查] 1. 检查 API 是否返回成功状态。 2. 检查 URL 列表长度。 3. 检查第一个 URL 是否为有效的网络链接。
+      if (!res.success || uploadUrlList.length === 0 || !uploadUrlList[0].startsWith("http")) {
+          new Notice("批量上传失败！PicList未返回有效网络链接。已阻止替换和删除操作。", 15000); // 延长通知时间
+          console.error("Batch Upload Failed: PicList returned empty or invalid URLs. Result:", res.result);
+          return; // 立即停止执行，防止后续的替换和删除
+      }
+      // ------------------------ ↑↑↑ 关键修改部分 ↑↑↑ ------------------------
+      
       if (imageList.length !== uploadUrlList.length) {
         new Notice(
           t("Warning: upload files is different of reciver files from api")
@@ -409,7 +419,7 @@ export default class imageAutoUploadPlugin extends Plugin {
           }
 
           // 剪贴板中是图片时进行上传
-          if (this.canUpload(evt.clipboardData)) {
+          if (this.canUpload(clipboardData)) {
             this.uploadFileAndEmbedImgurImage(
               editor,
               async (editor: Editor, pasteId: string) => {
