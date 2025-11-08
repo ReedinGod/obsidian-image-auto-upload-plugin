@@ -381,6 +381,7 @@ export default class imageAutoUploadPlugin extends Plugin {
     });
   }
 
+  
   setupPasteHandler() {
     this.registerEvent(
       this.app.workspace.on(
