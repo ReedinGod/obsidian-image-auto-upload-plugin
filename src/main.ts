@@ -11,6 +11,7 @@ import {
   MarkdownFileInfo,
 } from "obsidian";
 import { resolve, basename, dirname } from "path-browserify";
+
 import { isAssetTypeAnImage, arrayToObject } from "./utils";
 import { downloadAllImageFiles } from "./download";
 import { UploaderManager } from "./uploader/index";
@@ -355,14 +356,14 @@ export default class imageAutoUploadPlugin extends Plugin {
     this.upload(imageList).then(res => {
       let uploadUrlList = res.result;
 
-      // ------------------------ ↓↓↓ 关键修改部分 ↓↓↓ ------------------------
+      // ------------------------ ↓↓↓ 关键安全修复部分 ↓↓↓ ------------------------
       // [安全检查] 1. 检查 API 是否返回成功状态。 2. 检查 URL 列表长度。 3. 检查第一个 URL 是否为有效的网络链接。
       if (!res.success || uploadUrlList.length === 0 || !uploadUrlList[0].startsWith("http")) {
           new Notice("批量上传失败！PicList未返回有效网络链接。已阻止替换和删除操作。", 15000); // 延长通知时间
           console.error("Batch Upload Failed: PicList returned empty or invalid URLs. Result:", res.result);
           return; // 立即停止执行，防止后续的替换和删除
       }
-      // ------------------------ ↑↑↑ 关键修改部分 ↑↑↑ ------------------------
+      // ------------------------ ↑↑↑ 关键安全修复部分 ↑↑↑ ------------------------
       
       if (imageList.length !== uploadUrlList.length) {
         new Notice(
@@ -380,25 +381,27 @@ export default class imageAutoUploadPlugin extends Plugin {
     });
   }
 
-  
   setupPasteHandler() {
     this.registerEvent(
       this.app.workspace.on(
         "editor-paste",
         (evt: ClipboardEvent, editor: Editor, markdownView: MarkdownView) => {
+          // FIX: 使用 DataTransfer 接口来兼容 Actions 环境的类型检查
+          const clipboardData = evt.clipboardData as DataTransfer;
+          
           const allowUpload = this.helper.getFrontmatterValue(
             "image-auto-upload",
             this.settings.uploadByClipSwitch
           );
 
-          let files = evt.clipboardData.files;
+          let files = clipboardData.files;
           if (!allowUpload) {
             return;
           }
 
           // 剪贴板内容有md格式的图片时
           if (this.settings.workOnNetWork) {
-            const clipboardValue = evt.clipboardData.getData("text/plain");
+            const clipboardValue = clipboardData.getData("text/plain");
             const imageList = this.helper
               .getImageLink(clipboardValue)
               .filter(image => image.path.startsWith("http"))
@@ -424,7 +427,7 @@ export default class imageAutoUploadPlugin extends Plugin {
               editor,
               async (editor: Editor, pasteId: string) => {
                 let res: any;
-                res = await this.uploadByClipboard(evt.clipboardData.files);
+                res = await this.uploadByClipboard(clipboardData.files);
 
                 if (res.code !== 0) {
                   this.handleFailedUpload(editor, pasteId, res.msg);
@@ -434,7 +437,7 @@ export default class imageAutoUploadPlugin extends Plugin {
 
                 return url;
               },
-              evt.clipboardData
+              clipboardData
             ).catch();
             evt.preventDefault();
           }
