@@ -11,7 +11,6 @@ import {
   MarkdownFileInfo,
 } from "obsidian";
 import { resolve, basename, dirname } from "path-browserify";
-
 import { isAssetTypeAnImage, arrayToObject } from "./utils";
 import { downloadAllImageFiles } from "./download";
 import { UploaderManager } from "./uploader/index";
